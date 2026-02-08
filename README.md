@@ -34,6 +34,7 @@ An advanced, fully-integrated Streamlit application for credit risk assessment u
 ```
 credit-risk/
 ├── app.py                      # Main Streamlit application
+├── setup_models.py             # Script to pre-train models for deployment
 ├── requirements.txt            # Python dependencies
 ├── README.md                   # This file
 │
@@ -51,8 +52,9 @@ credit-risk/
 ├── data/
 │   └── credit_risk_dataset.csv # Credit risk dataset
 │
-├── models/                     # Saved model files
-│   └── .gitkeep
+├── models/                     # Saved model files (for deployment)
+│   ├── preprocessed_data.joblib  # Preprocessed training/test data
+│   └── trained_models.joblib     # All trained ML models
 │
 ├── logs/                       # Log files
 │   └── .gitkeep
@@ -219,6 +221,47 @@ The application includes documentation on building production data pipelines:
 - Feature store implementation
 - Model serving architecture
 - MLOps best practices
+
+## 🚀 Deployment to Streamlit Community Cloud
+
+### Pre-trained Models
+
+This application comes with pre-trained models that are loaded automatically.
+If you want to retrain with your own data or parameters:
+
+1. **Run the setup script**
+```bash
+python setup_models.py
+```
+
+This will:
+- Preprocess the data
+- Train all 9 ML models
+- Save results to `models/` directory
+
+2. **Commit the generated files**
+```bash
+git add models/preprocessed_data.joblib models/trained_models.joblib
+git commit -m "Update pre-trained models"
+git push
+```
+
+### Deploy to Streamlit Cloud
+
+1. Push your repository to GitHub
+2. Go to [share.streamlit.io](https://share.streamlit.io)
+3. Click "New app"
+4. Select your repository, branch (`main`), and main file (`app.py`)
+5. Click "Deploy"
+
+The app will automatically load the pre-trained models from the `models/` directory.
+
+### Important Files for Deployment
+
+| File | Purpose | Size |
+|------|---------|------|
+| `models/preprocessed_data.joblib` | Preprocessed training/test data | ~3 MB |
+| `models/trained_models.joblib` | All trained ML models | ~5 MB |
 
 ## 🤝 Contributing
 

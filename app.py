@@ -21,12 +21,16 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 # Import custom modules
 from src.data_loader import DataLoader, get_data_collection_guide
-from src.preprocessing import DataPreprocessor, get_preprocessing_guide
+from src.preprocessing import (
+    DataPreprocessor, get_preprocessing_guide,
+    save_preprocessed_data, load_preprocessed_data, preprocessed_data_exists
+)
 from src.models import CreditRiskModels, get_model_explanations, get_evaluation_metrics_guide
 from src.visualizations import CreditRiskVisualizer
 from config.settings import (
     APP_TITLE, APP_ICON, PAGE_LAYOUT, TARGET_COLUMN,
-    NUMERICAL_FEATURES, CATEGORICAL_FEATURES, FEATURE_DESCRIPTIONS
+    NUMERICAL_FEATURES, CATEGORICAL_FEATURES, FEATURE_DESCRIPTIONS,
+    MODELS_DIR
 )
 
 
@@ -99,7 +103,7 @@ st.markdown("""
 # SESSION STATE INITIALIZATION
 # ============================================================================
 def initialize_session_state():
-    """Initialize session state variables."""
+    """Initialize session state variables and load saved data if available."""
     if 'data_loaded' not in st.session_state:
         st.session_state.data_loaded = False
     if 'df' not in st.session_state:
@@ -120,6 +124,25 @@ def initialize_session_state():
         st.session_state.y_test = None
     if 'feature_names' not in st.session_state:
         st.session_state.feature_names = None
+    
+    # Try to load saved preprocessed data
+    if st.session_state.X_train is None and preprocessed_data_exists():
+        saved_data = load_preprocessed_data()
+        if saved_data is not None:
+            st.session_state.X_train = saved_data['X_train']
+            st.session_state.X_test = saved_data['X_test']
+            st.session_state.y_train = saved_data['y_train']
+            st.session_state.y_test = saved_data['y_test']
+            st.session_state.feature_names = saved_data['feature_names']
+    
+    # Try to load saved model results
+    if st.session_state.model_results is None and CreditRiskModels.results_exist():
+        credit_models = CreditRiskModels()
+        if credit_models.load_all_results():
+            st.session_state.model_results = credit_models
+            st.session_state.models_trained = True
+            if st.session_state.feature_names is None:
+                st.session_state.feature_names = credit_models.feature_names
 
 
 initialize_session_state()
@@ -551,7 +574,12 @@ def render_preprocessing_page():
                 st.session_state.y_test = y_test
                 st.session_state.feature_names = feature_names
                 
-                st.success("✅ Preprocessing completed!")
+                # Save preprocessed data for deployment
+                save_path = save_preprocessed_data(
+                    X_train_balanced, X_test, y_train_balanced, y_test, feature_names
+                )
+                
+                st.success("✅ Preprocessing completed and saved!")
                 
                 # Show preprocessing summary
                 col1, col2, col3 = st.columns(3)
@@ -561,6 +589,8 @@ def render_preprocessing_page():
                     st.metric("Test Samples", f"{len(X_test):,}")
                 with col3:
                     st.metric("Features", len(feature_names))
+                
+                st.info(f"💾 Data saved to: `{save_path.name}`")
                 
                 # Show preprocessing log
                 st.subheader("Preprocessing Log")
@@ -646,7 +676,11 @@ def render_model_training_page():
         st.session_state.model_results = credit_models
         st.session_state.models_trained = True
         
+        # Save models for deployment
+        save_path = credit_models.save_all_results()
+        
         st.success(f"✅ Successfully trained {len(selected_models)} models!")
+        st.info(f"💾 Models saved to: `{save_path.name}`")
         
         # Show quick summary
         st.subheader("Training Summary")

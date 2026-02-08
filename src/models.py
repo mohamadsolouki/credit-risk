@@ -454,6 +454,75 @@ class CreditRiskModels:
             Loaded model object
         """
         return joblib.load(filepath)
+    
+    def save_all_results(self, filepath: Optional[Path] = None) -> Path:
+        """
+        Save all trained model results to disk.
+        
+        This saves the entire results dictionary including models,
+        metrics, and feature importance for deployment.
+        
+        Args:
+            filepath: Optional custom filepath
+            
+        Returns:
+            Path where results were saved
+        """
+        if not self.results:
+            raise ValueError("No results to save. Train models first.")
+        
+        if filepath is None:
+            filepath = MODELS_DIR / "trained_models.joblib"
+        
+        # Ensure directory exists
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Prepare data for saving
+        save_data = {
+            'results': self.results,
+            'feature_names': self.feature_names,
+            'best_model': self.best_model
+        }
+        
+        joblib.dump(save_data, filepath)
+        logger.info(f"All model results saved to {filepath}")
+        
+        return filepath
+    
+    def load_all_results(self, filepath: Optional[Path] = None) -> bool:
+        """
+        Load all trained model results from disk.
+        
+        Args:
+            filepath: Optional custom filepath
+            
+        Returns:
+            True if loaded successfully, False otherwise
+        """
+        if filepath is None:
+            filepath = MODELS_DIR / "trained_models.joblib"
+        
+        if not filepath.exists():
+            logger.warning(f"No saved results found at {filepath}")
+            return False
+        
+        try:
+            save_data = joblib.load(filepath)
+            self.results = save_data['results']
+            self.feature_names = save_data['feature_names']
+            self.best_model = save_data['best_model']
+            logger.info(f"Loaded {len(self.results)} models from {filepath}")
+            return True
+        except Exception as e:
+            logger.error(f"Error loading results: {e}")
+            return False
+    
+    @staticmethod
+    def results_exist(filepath: Optional[Path] = None) -> bool:
+        """Check if saved results exist."""
+        if filepath is None:
+            filepath = MODELS_DIR / "trained_models.joblib"
+        return filepath.exists()
 
 
 def get_model_explanations() -> Dict[str, str]:

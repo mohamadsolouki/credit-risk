@@ -475,6 +475,78 @@ class DataPreprocessor:
         return X_resampled, y_resampled
 
 
+def save_preprocessed_data(
+    X_train: np.ndarray,
+    X_test: np.ndarray,
+    y_train: np.ndarray,
+    y_test: np.ndarray,
+    feature_names: List[str],
+    filepath: Optional[Path] = None
+) -> Path:
+    """
+    Save preprocessed data to disk for deployment.
+    
+    Args:
+        X_train, X_test, y_train, y_test: Preprocessed data splits
+        feature_names: List of feature names
+        filepath: Optional custom filepath
+        
+    Returns:
+        Path where data was saved
+    """
+    import joblib
+    from config.settings import MODELS_DIR
+    
+    if filepath is None:
+        filepath = MODELS_DIR / "preprocessed_data.joblib"
+    
+    # Ensure directory exists
+    filepath.parent.mkdir(parents=True, exist_ok=True)
+    
+    save_data = {
+        'X_train': X_train,
+        'X_test': X_test,
+        'y_train': y_train,
+        'y_test': y_test,
+        'feature_names': feature_names
+    }
+    
+    joblib.dump(save_data, filepath)
+    return filepath
+
+
+def load_preprocessed_data(filepath: Optional[Path] = None) -> Optional[Dict]:
+    """
+    Load preprocessed data from disk.
+    
+    Args:
+        filepath: Optional custom filepath
+        
+    Returns:
+        Dictionary with preprocessed data or None if not found
+    """
+    import joblib
+    from config.settings import MODELS_DIR
+    
+    if filepath is None:
+        filepath = MODELS_DIR / "preprocessed_data.joblib"
+    
+    if not filepath.exists():
+        return None
+    
+    return joblib.load(filepath)
+
+
+def preprocessed_data_exists(filepath: Optional[Path] = None) -> bool:
+    """Check if preprocessed data exists."""
+    from config.settings import MODELS_DIR
+    
+    if filepath is None:
+        filepath = MODELS_DIR / "preprocessed_data.joblib"
+    
+    return filepath.exists()
+
+
 def get_preprocessing_guide() -> str:
     """
     Return a comprehensive guide on data preprocessing for credit risk.
